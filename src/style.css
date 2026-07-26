@@ -698,6 +698,45 @@ input::placeholder, textarea::placeholder { color: rgba(139, 147, 184, .6); }
   .cfg-grid .form-line label { text-align: left; }
 }
 
+/* ═══════════════════════════════════════════════════════
+   v0.4.0 像素UI主题 —— 星露谷式游戏面板质感（末尾覆盖层）
+   ═══════════════════════════════════════════════════════ */
+.panel, .modal, .toast, .win-bubble, .interact-prompt,
+.chat-opt, .good-card, .arcade-card, .medal, .bag-item, .mode-card,
+.btn-glow, .btn-plain, .hud-btn, .chip, .avatar-cell, .etab,
+input, textarea, select, .chat-avatar, .feed, .floor-nav, .tip,
+.good-buy, .switch, .vendor-line, .settings-card {
+  border-radius: 3px !important;
+}
+
+/* 面板：缺角像素框 + 硬阴影 */
+.panel, .modal {
+  clip-path: polygon(0 10px, 10px 10px, 10px 0, calc(100% - 10px) 0, calc(100% - 10px) 10px, 100% 10px, 100% calc(100% - 10px), calc(100% - 10px) calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 10px calc(100% - 10px), 0 calc(100% - 10px));
+  border: 2px solid #4a5578;
+  box-shadow: 0 0 0 4px rgba(10, 12, 24, .9), 10px 10px 0 rgba(0, 0, 0, .35);
+}
+.news-panel { border-color: #6b5a3e; }
+
+/* 按钮：硬阴影 + 按下位移（像素游戏的“咔哒”感） */
+.btn-glow {
+  clip-path: polygon(0 6px, 6px 6px, 6px 0, calc(100% - 6px) 0, calc(100% - 6px) 6px, 100% 6px, 100% calc(100% - 6px), calc(100% - 6px) calc(100% - 6px), calc(100% - 6px) 100%, 6px 100%, 6px calc(100% - 6px), 0 calc(100% - 6px));
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, .5);
+  animation: none;
+}
+.btn-glow:hover { transform: none; box-shadow: 4px 4px 0 rgba(0, 0, 0, .5), 0 0 22px rgba(168, 85, 247, .5); }
+.btn-glow:active { transform: translate(3px, 3px); box-shadow: 1px 1px 0 rgba(0, 0, 0, .5); }
+.btn-plain, .hud-btn, .chip, .good-buy, .etab.active {
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, .4);
+}
+.btn-plain:active, .hud-btn:active, .chip:active, .good-buy:active { transform: translate(2px, 2px); box-shadow: 0 0 0 transparent; }
+
+/* 塔币跳动 */
+.hud-coins.bump { animation: coinBump .32s cubic-bezier(.2, 1.6, .4, 1); }
+@keyframes coinBump { 0% { transform: scale(1); } 40% { transform: scale(1.22); } 100% { transform: scale(1); } }
+
+/* 好感爱心跳动 */
+.chat-aff-hearts.bump { animation: coinBump .4s cubic-bezier(.2, 1.6, .4, 1); }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }

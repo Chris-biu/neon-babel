@@ -76,6 +76,9 @@ async function open(rid) {
     const a = getAffinity(rid);
     affEl.textContent = heartsHtml(a);
     affLabel.textContent = `熟悉度 ${a}/10`;
+    affEl.classList.remove('bump');
+    void affEl.offsetWidth;
+    affEl.classList.add('bump');
   };
 
   const push = (who, text, sys = false) => {

@@ -26,6 +26,10 @@ export function initHud(api) {
   renderCoins();
   bus.on('coins', ({ delta, reason }) => {
     renderCoins();
+    const hc = $('hud-coins');
+    hc.classList.remove('bump');
+    void hc.offsetWidth; // 重启动画
+    hc.classList.add('bump');
     if (delta > 0) toast(`🪙 +${delta} ${reason || ''}`, 'gold');
   });
 

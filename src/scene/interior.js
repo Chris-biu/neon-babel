@@ -311,6 +311,7 @@ export function buildInterior(worldLayer, { residents, vendors, gatekeeper }) {
       n.visible = present && !sleeping;
       n.present = present; n.sleeping = sleeping;
       n.sprite.visible = n.visible;
+      if (n.shadow) n.shadow.visible = n.visible;
       n.doorLight.alpha = present ? (sleeping ? 0.18 : 0.8) : 0.06;
     },
     npcState(rid) { return npcs.get(rid); },
@@ -322,6 +323,7 @@ export function buildInterior(worldLayer, { residents, vendors, gatekeeper }) {
         n.sprite.x += n.dir * dms * 0.016;
         if (n.sprite.x > n.zone[1]) { n.dir = -1; n.sprite.scale.x = -3; }
         if (n.sprite.x < n.zone[0]) { n.dir = 1; n.sprite.scale.x = 3; }
+        if (n.shadow) n.shadow.x = n.sprite.x + (n.dir < 0 ? -18 : 18);
       }
     },
   };
@@ -350,10 +352,14 @@ function interiorShell(root, f, wallCol, wallLit, wood = false) {
     lamp.fill(0xd9a441);
     lamp.circle(lx + 1, f.top + 38, 5).fill({ color: 0xffe9b0, alpha: 0.95 });
     c.addChild(lamp);
+    // 光锥两段色阶化（贴近像素抖动质感）
     const pool = new Graphics();
-    pool.ellipse(lx, f.ground + 2, 90, 10).fill({ color: 0xffca7a, alpha: 0.05 });
     pool.moveTo(lx - 16, f.top + 38).lineTo(lx + 18, f.top + 38).lineTo(lx + 66, f.ground).lineTo(lx - 64, f.ground).closePath();
-    pool.fill({ color: 0xffca7a, alpha: 0.045 });
+    pool.fill({ color: 0xffca7a, alpha: 0.035 });
+    pool.moveTo(lx - 9, f.top + 38).lineTo(lx + 11, f.top + 38).lineTo(lx + 38, f.ground).lineTo(lx - 36, f.ground).closePath();
+    pool.fill({ color: 0xffca7a, alpha: 0.04 });
+    pool.rect(lx - 64, f.ground, 130, 4).fill({ color: 0xffca7a, alpha: 0.07 });
+    pool.rect(lx - 44, f.ground + 4, 90, 3).fill({ color: 0xffca7a, alpha: 0.05 });
     c.addChild(pool);
   }
   return c;
@@ -400,12 +406,16 @@ function buildDoorWithNpc(c, f, dx, res, npcs, interactables) {
   plate.y = f.ground - dh - 26;
   c.addChild(plate);
   // NPC（清醒时在走廊踱步）
+  const npcShadow = new Graphics();
+  npcShadow.ellipse(0, 0, 15, 4).fill({ color: 0x000000, alpha: 0.28 });
+  npcShadow.y = f.ground - 2;
+  c.addChild(npcShadow);
   const sprite = makeCharacter(res.id, 'walk', 3, res.color);
   sprite.x = dx + dw + 24;
   sprite.y = f.ground - sprite.height;
   c.addChild(sprite);
   npcs.set(res.id, {
-    sprite, floor: f, doorLight,
+    sprite, shadow: npcShadow, floor: f, doorLight,
     zone: [Math.max(ELEV.x2 + 30, dx - 110), Math.min(IW - 80, dx + dw + 130)],
     dir: 1, visible: true, present: true, sleeping: false, activity: '',
   });

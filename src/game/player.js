@@ -1,5 +1,5 @@
 // 玩家控制器：WASD 移动 · 电梯上下楼 · E 交互 · 摄像机跟随
-import { Container } from 'pixi.js';
+import { Container, Graphics } from 'pixi.js';
 import { makeCharacter } from '../scene/pixels.js';
 import { scene, worldToScreen, setFollow } from '../scene/app.js';
 import { IW, ELEV } from '../scene/interior.js';
@@ -18,6 +18,9 @@ export function spawnPlayer(worldLayer, api, startKey = 'lobby') {
   const walk = makeCharacter(pid, 'walk', 3);
   const stand = makeCharacter(pid, 'stand', 3);
   const c = new Container();
+  const shadow = new Graphics();
+  shadow.ellipse(18, 55, 15, 4).fill({ color: 0x000000, alpha: 0.3 });
+  c.addChild(shadow);
   c.addChild(stand); c.addChild(walk);
   walk.visible = false;
   worldLayer.addChild(c);
