@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+  <meta name="description" content="不夜塔 Neon Babel —— 一座为睡不着的人而建的塔。AI住户在雨夜的窗后过着自己的日子，敲敲门，他们会记得你。" />
+  <meta name="theme-color" content="#0b0e1a" />
+  <meta property="og:title" content="不夜塔 · Neon Babel" />
+  <meta property="og:description" content="一座为睡不着的人而建的像素塔。12位AI住户在雨夜里过着自己的日子——敲敲门，他们会记得你。" />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="/title.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <title>不夜塔 · Neon Babel</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='30' y='14' width='40' height='74' rx='4' fill='%231a2138'/%3E%3Crect x='38' y='24' width='9' height='9' fill='%23ffca7a'/%3E%3Crect x='53' y='24' width='9' height='9' fill='%23374168'/%3E%3Crect x='38' y='40' width='9' height='9' fill='%23ffca7a'/%3E%3Crect x='53' y='40' width='9' height='9' fill='%23ffca7a'/%3E%3Crect x='38' y='56' width='9' height='9' fill='%23374168'/%3E%3Crect x='53' y='56' width='9' height='9' fill='%23ffca7a'/%3E%3Crect x='38' y='72' width='9' height='9' fill='%23ffca7a'/%3E%3Crect x='53' y='72' width='9' height='9' fill='%23ffca7a'/%3E%3Ccircle cx='50' cy='8' r='3' fill='%23ff5f8f'/%3E%3C/svg%3E" />
+</head>
+<body>
+  <!-- PixiJS 世界画布 -->
+  <div id="stage"></div>
+
+  <!-- ═══ 顶部 HUD ═══ -->
+  <header id="hud" class="hud hidden">
+    <div class="hud-left">
+      <div class="hud-logo">
+        <span class="hud-logo-icon">🏙</span>
+        <span class="hud-logo-text">不夜塔</span>
+        <span class="hud-height" id="hud-height">…层</span>
+      </div>
+    </div>
+    <div class="hud-center" id="hud-clock">--:--</div>
+    <div class="hud-right">
+      <div class="hud-coins" id="hud-coins" title="塔币">🪙 <b id="coins-num">0</b></div>
+      <button class="hud-btn" id="btn-room" title="我的房间">🔑</button>
+      <button class="hud-btn" id="btn-news" title="不夜塔晚报">📰</button>
+      <button class="hud-btn" id="btn-bag" title="随身物品">🎁</button>
+      <button class="hud-btn" id="btn-medals" title="成就">🏅</button>
+      <button class="hud-btn" id="btn-cfg" title="设置">⚙️</button>
+      <button class="hud-btn" id="btn-mute" title="声音">🔊</button>
+    </div>
+  </header>
+
+  <!-- ═══ 楼层导航 ═══ -->
+  <nav id="floor-nav" class="floor-nav hidden"></nav>
+
+  <!-- ═══ 动态流 ═══ -->
+  <aside id="feed" class="feed hidden">
+    <div class="feed-head">
+      <span>塔内动态</span>
+      <button id="feed-toggle" class="feed-toggle">—</button>
+    </div>
+    <ul id="feed-list" class="feed-list"></ul>
+  </aside>
+
+  <!-- ═══ 悬浮提示 ═══ -->
+  <div id="tip" class="tip hidden"></div>
+
+  <!-- ═══ 标题页 ═══ -->
+  <div id="landing" class="overlay landing">
+    <div class="landing-inner">
+      <div class="landing-tower-icon" aria-hidden="true">
+        <div class="lt-crane"></div>
+        <div class="lt-body">
+          <i></i><i class="on"></i><i></i><i class="on"></i><i class="on"></i><i></i>
+          <i class="on"></i><i></i><i class="on"></i><i class="on"></i><i></i><i class="on"></i>
+        </div>
+      </div>
+      <h1 class="landing-title">不夜塔</h1>
+      <p class="landing-en">N E O N &nbsp; B A B E L</p>
+      <p class="landing-tagline" id="landing-tagline">一座为睡不着的人而建的塔</p>
+      <button class="btn-glow" id="btn-enter">推 门 而 入</button>
+      <p class="landing-note">你的一切数据只存在这台设备的浏览器里 · 塔外无人知晓</p>
+    </div>
+  </div>
+
+  <!-- ═══ 加载页 ═══ -->
+  <div id="loading" class="overlay loading hidden">
+    <div class="loading-inner">
+      <div class="loading-spinner"></div>
+      <p id="loading-line">正在点亮第 847 层的灯…</p>
+    </div>
+  </div>
+
+  <!-- ═══ 守门人仪式 ═══ -->
+  <div id="gate" class="overlay gate hidden">
+    <div class="gate-inner">
+      <div class="gate-eye" id="gate-eye"><span></span></div>
+      <div class="gate-name" id="gate-name">守门人</div>
+      <div class="gate-text" id="gate-text"></div>
+      <div class="gate-input-row hidden" id="gate-input-row">
+        <input type="text" id="gate-input" maxlength="80" placeholder="如实回答，或者随便糊弄一下也行…" autocomplete="off" />
+        <button class="btn-glow btn-sm" id="gate-send">回答</button>
+      </div>
+      <button class="btn-glow btn-sm hidden" id="gate-next">继续</button>
+      <p><button class="gate-skip" id="gate-skip">…雨太大了，跳过盘问直接进去 →</button></p>
+    </div>
+  </div>
+
+  <!-- ═══ 角色创建 ═══ -->
+  <div id="checkin" class="overlay checkin hidden">
+    <div class="panel checkin-panel">
+      <h2 class="panel-title">入住登记</h2>
+      <p class="panel-sub">守门人把一本厚重的登记簿推到你面前</p>
+      <div class="checkin-row">
+        <label>你的名字</label>
+        <input type="text" id="player-name" maxlength="10" placeholder="随便一个称呼就好" autocomplete="off" />
+      </div>
+      <div class="checkin-row">
+        <label>挑一盏属于你的灯</label>
+        <div class="avatar-grid" id="avatar-grid"></div>
+      </div>
+      <button class="btn-glow" id="btn-checkin">签下名字，领钥匙</button>
+    </div>
+  </div>
+
+  <!-- ═══ 通用面板容器（对话/商店/报纸等由JS注入） ═══ -->
+  <div id="modal-root"></div>
+
+  <!-- ═══ Toast ═══ -->
+  <div id="toast-root"></div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
