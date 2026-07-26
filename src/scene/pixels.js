@@ -237,6 +237,12 @@ export function characterLook(id, accentColor = null) {
   };
 }
 
+/** 供 2D Canvas 使用：取角色站立网格与调色板（合影卡/房间渲染用） */
+export function characterGrid(id, accentColor = null) {
+  const look = characterLook(id, accentColor);
+  return { grid: applyHair(STAND_A, look.hairstyle), palette: look.palette };
+}
+
 /** 生成角色某姿态的动画/精灵 */
 export function makeCharacter(id, pose = 'stand', scale = 3, accentColor = null) {
   const look = characterLook(id, accentColor);

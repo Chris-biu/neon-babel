@@ -166,9 +166,12 @@ function openCheckin() {
     revealWorld();
     setTimeout(() => {
       toast(`${chosen} 入住登记完成：${name} · ${room}`, 'gold');
-      toast('滚动鼠标滚轮上下逛塔，点亮着灯的窗户敲门', '');
       checkMedals();
     }, 1900);
+    // 新手引导：分步提示
+    setTimeout(() => toast('🎮 A/D 走路 · 电梯里按 W/S 上下楼 · 靠近发光处按 E'), 4200);
+    setTimeout(() => toast('📌 大堂有块委托板——住户们的小心愿都贴在上面，完成有赏金'), 9000);
+    setTimeout(() => toast('🕹 塔币不够就去 B1 街机厅赢，9F 夜市的礼物能换住户的真心'), 14500);
   };
 }
 

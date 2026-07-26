@@ -208,6 +208,11 @@ async function open(rid) {
 
     const row = document.createElement('div');
     row.className = 'chat-opt-row';
+    if (a >= 8) {
+      row.appendChild(makeBtn('📸 深夜合影', () => {
+        import('./photo.js').then(({ takePhoto }) => takePhoto(res));
+      }));
+    }
     row.appendChild(makeBtn('🎁 送礼物', () => renderGiftPicker()));
     if (aiEnabled()) row.appendChild(makeBtn('💬 自由聊天', () => renderFreeChat()));
     row.appendChild(makeBtn('🚪 告辞', () => { sfx.close(); el.querySelector('[data-close]').click(); }));
