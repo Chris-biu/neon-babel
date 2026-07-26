@@ -20,9 +20,16 @@
   --panel-bg: rgba(17, 21, 39, .92);
   --glass: rgba(20, 26, 48, .78);
   --radius: 16px;
-  --serif: "Noto Serif SC", "Source Han Serif SC", "Songti SC", "STSong", "SimSun", serif;
-  --sans: "PingFang SC", "Microsoft YaHei", "Segoe UI", system-ui, sans-serif;
+  --serif: "NeonPixel", "Noto Serif SC", "Source Han Serif SC", "Songti SC", "STSong", "SimSun", serif;
+  --sans: "NeonPixel", "PingFang SC", "Microsoft YaHei", "Segoe UI", system-ui, sans-serif;
   --shadow: 0 12px 44px rgba(0, 0, 0, .55);
+}
+
+/* 可选像素中文字体：把字体文件放到 public/fonts/pixel.woff2 即自动全局生效 */
+@font-face {
+  font-family: 'NeonPixel';
+  src: url('/fonts/pixel.woff2') format('woff2');
+  font-display: swap;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -148,9 +155,12 @@ input::placeholder, textarea::placeholder { color: rgba(139, 147, 184, .6); }
   font-size: clamp(56px, 11vw, 96px);
   font-weight: 900;
   letter-spacing: .22em; text-indent: .22em;
-  background: linear-gradient(180deg, #fff 20%, #ffca7a 55%, #ff5f8f);
-  -webkit-background-clip: text; background-clip: text; color: transparent;
-  filter: drop-shadow(0 6px 30px rgba(255, 95, 143, .35));
+  color: #ffca7a;
+  /* 像素风：硬边错位阴影替代平滑渐变 */
+  text-shadow:
+    4px 4px 0 #a83226,
+    8px 8px 0 rgba(0, 0, 0, .55),
+    0 0 34px rgba(255, 95, 143, .3);
 }
 .landing-en { letter-spacing: .5em; text-indent: .5em; color: var(--neon-cyan); font-size: 13px; opacity: .8; margin-top: 4px; }
 .landing-tagline { font-family: var(--serif); font-size: clamp(15px, 2.6vw, 19px); color: var(--text-dim); margin: 22px 0 34px; letter-spacing: .12em; }

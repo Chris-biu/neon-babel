@@ -40,9 +40,35 @@ export function initPanels() {
   bus.on('wish:open', openWish);
   bus.on('aquarium:open', () => bus.emit('fishing:open'));
   bus.on('quests:open', openQuests);
+  bus.on('dex:open', openFishDex);
   bus.on('quest:done', q => {
     addCoins(q.reward, '· 委托完成');
     toast(`📌 委托完成：${q.text.slice(0, 18)}…`, 'gold');
+  });
+}
+
+// ── 鱼类图鉴 ──
+function openFishDex() {
+  return import('../games/arcade.js').then(({ FISH_SPECIES }) => {
+    const dex = state().fishDex || {};
+    const got = FISH_SPECIES.filter(s => dex[s.id]).length;
+    openModal(`
+      <div class="panel grid-panel">
+        <button class="modal-close" data-close>✕</button>
+        <h2 class="panel-title">🐟 深渊鱼类图鉴</h2>
+        <p class="panel-sub">已收录 ${got} / ${FISH_SPECIES.length} · 稀有鱼只在有缘人的钩下出现</p>
+        <div class="medal-list">
+          ${FISH_SPECIES.map(s => {
+            const n = dex[s.id] || 0;
+            return `<div class="medal ${n ? '' : 'locked'}">
+              <div class="md-icon" style="${n ? `color:${s.color}` : ''}">${n ? (s.jelly ? '🪼' : s.rare ? '✨' : '🐟') : '❓'}</div>
+              <div><div class="md-name" style="${n ? `color:${s.color}` : ''}">${n ? escapeHtml(s.name) : '？？？'}</div>
+              <div class="md-desc">${n ? `${escapeHtml(s.desc)} · 钓获 ${n} 次` : s.rare ? '传说中的存在……' : '还没钓到过'}</div></div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+    `);
   });
 }
 

@@ -13,6 +13,24 @@ import { checkMedals } from '../sim/engine.js';
 const CW = 560, CH = 420;
 let cleanup = null;
 
+// ── 鱼类图鉴 ──
+export const FISH_SPECIES = [
+  { id: 'blue_lantern', name: '灯笼小蓝', color: '#4dd8ff', desc: 'B2 最常见的居民，提灯上班，提灯下班。', lane: 0 },
+  { id: 'mint_fin', name: '薄荷鳍', color: '#5fd4a2', desc: '它游过的水都是凉的，适合给发烫的心事退烧。', lane: 1 },
+  { id: 'orange_lamp', name: '橘子灯', color: '#ff9f43', desc: '看起来是冬季限定色，其实一年四季都在加班。', lane: 2 },
+  { id: 'neon_blade', name: '霓虹刀', color: '#ff5f8f', desc: '快得像一句谣言，钓到它需要缘分和手速。', lane: 3 },
+  { id: 'gold_scale', name: '金鳞老爷', color: '#f5e6b8', desc: '深水层贵族，接受垂钓需提前预约（它说的）。', lane: 4 },
+  { id: 'royal_koi', name: '鎏金锦鲤', color: '#ffd700', desc: '塔的传说：见到它的人，今晚一定睡得着。', rare: true },
+  { id: 'purple_jelly', name: '紫水母', color: '#a78bfa', desc: '会偷塔币的软体惯犯。图鉴强制收录，以儆效尤。', jelly: true },
+];
+
+function recordCatch(speciesId) {
+  const S = state();
+  S.fishDex = S.fishDex || {};
+  S.fishDex[speciesId] = (S.fishDex[speciesId] || 0) + 1;
+  save();
+}
+
 export function initArcade() {
   bus.on('arcade:open', openArcadeHub);
   bus.on('fishing:open', () => launchGame(GAMES.fishing));
@@ -350,11 +368,14 @@ function runFishing(ctx, ui) {
   for (const lane of LANES) spawnFish(lane);
   function spawnFish(lane) {
     const dir = Math.random() < 0.5 ? 1 : -1;
+    const jelly = Math.random() < 0.16;
+    const rare = !jelly && Math.random() < 0.045;
+    const laneIdx = LANES.indexOf(lane);
+    const species = jelly ? 'purple_jelly' : rare ? 'royal_koi' : FISH_SPECIES[laneIdx].id;
     fishes.push({
-      lane, dir,
+      lane, dir, jelly, rare, species,
       x: dir > 0 ? -30 : CW + 30,
-      jelly: Math.random() < 0.18,
-      w: 26 + Math.random() * 10,
+      w: rare ? 40 : 26 + Math.random() * 10,
     });
   }
 
@@ -405,7 +426,9 @@ function runFishing(ctx, ui) {
       if (hook.y <= 54) {
         if (hook.catchFish) {
           const f = hook.catchFish;
+          recordCatch(f.species);
           if (f.jelly) { score = Math.max(0, score - 20); sfx.hit(); }
+          else if (f.rare) { score += 100; sfx.win(); ui.foot('✨ 鎏金锦鲤！传说今晚你一定睡得着'); }
           else { score += f.lane.value; sfx.coin(); }
           hook.catchFish = null;
         }
@@ -445,6 +468,12 @@ function runFishing(ctx, ui) {
         px(ctx, f.x - 8, y - 6, 4, 3, '#a78bfa');
         px(ctx, f.x - 6, y + 6, 1, 2, '#8b6fd8');
         px(ctx, f.x + 2, y + 6, 1, 2, '#8b6fd8');
+      } else if (f.rare) {
+        px(ctx, f.x - f.w / 2, y - 5, f.w / 4, 3, '#ffd700');
+        px(ctx, f.x + f.w / 2, y - 3, 3, 2, '#ffb700');
+        px(ctx, f.x - 4, y - 8, 2, 1, '#fff3b0');
+        ctx.fillStyle = '#0b0e1a';
+        ctx.fillRect(f.x - f.w / 2 + 5, y - 3, 4, 4);
       } else {
         px(ctx, f.x - f.w / 2, y - 4, f.w / 4, 2, f.lane.color);
         px(ctx, f.x + f.w / 2, y - 2, 2, 1, f.lane.color); // 尾

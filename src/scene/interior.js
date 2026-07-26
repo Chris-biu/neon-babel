@@ -9,6 +9,16 @@ import {
 } from './pixels.js';
 import { bus } from '../core/bus.js';
 import { towerHeight } from '../core/clock.js';
+import { scene } from './app.js';
+
+/** 视锥剔除：楼层不在屏幕附近时跳过其动画（性能） */
+function zoneVisible(f) {
+  const vh = window.innerHeight / (scene.worldScale || 1);
+  return f.top < scene.cam.y + vh + 240 && f.top + f.h > scene.cam.y - 240;
+}
+function zonedTick(f, fn) {
+  tickFns.push(dms => { if (zoneVisible(f)) fn(dms); });
+}
 
 export const IW = 1360;          // 室内世界宽度
 const WALL_L = 26, WALL_R = IW - 26;
@@ -119,7 +129,7 @@ export function buildInterior(worldLayer, { residents, vendors, gatekeeper }) {
       c.addChild(ven);
       const nm = label(v.stall || v.name, { size: 12, fill: 0xf5e6c8, ls: 1 });
       nm.x = sx + stallW / 2 - nm.width / 2; nm.y = f.ground - 100; c.addChild(nm);
-      steam(c, sx + 26, f.ground - 26, i);
+      steam(c, sx + 26, f.ground - 26, i, f);
       interactables.push({ floorKey: 'market', x: sx + stallW / 2, r: 76, label: `逛「${v.stall}」`, act: () => bus.emit('shop:open', i) });
     });
   }
@@ -237,7 +247,7 @@ export function buildInterior(worldLayer, { residents, vendors, gatekeeper }) {
       c.addChild(cg);
       const screen = new Graphics();
       c.addChild(screen);
-      tickFns.push(() => {
+      zonedTick(f, () => {
         const t = performance.now() / 1000;
         screen.clear();
         screen.rect(cx + 10, f.ground - 86, 64, 40).fill({ color: gd.col, alpha: 0.22 + 0.18 * Math.sin(t * (1.3 + i * 0.4) + i * 2) });
@@ -274,7 +284,7 @@ export function buildInterior(worldLayer, { residents, vendors, gatekeeper }) {
       sea.addChild(fp);
     }
     const jl = makeJelly('#a78bfa', 2, 'i'); jl.x = gx + gw / 2; jl.y = gy + gh - 40; jl.alpha = 0.75; sea.addChild(jl);
-    tickFns.push(dms => {
+    zonedTick(f, dms => {
       const now = performance.now() / 1000;
       for (const fo of fishes) {
         fo.sp.x += fo.v * dms;
@@ -292,6 +302,10 @@ export function buildInterior(worldLayer, { residents, vendors, gatekeeper }) {
     stool.rect(201, f.ground - 14, 5, 14).fill(0x3a2c1e);
     c.addChild(stool);
     interactables.push({ floorKey: 'aquarium', x: 195, r: 66, label: '坐下垂钓', act: () => bus.emit('fishing:open') });
+    const dexSign = label('📖 鱼类图鉴', { size: 11, fill: 0x9fd8ff, ls: 1 });
+    dexSign.x = 100; dexSign.y = f.ground - 60;
+    c.addChild(dexSign);
+    interactables.push({ floorKey: 'aquarium', x: 115, r: 56, label: '翻翻鱼类图鉴', act: () => bus.emit('dex:open') });
   }
 
   const totalH = y + 80;
@@ -488,10 +502,11 @@ function buildStringLights(parent, x1, y, x2, colors) {
 }
 
 // ── 摊位蒸汽 ──
-function steam(c, x, y, seed) {
+function steam(c, x, y, seed, f = null) {
   const s = new Graphics();
   c.addChild(s);
-  tickFns.push(() => {
+  const reg = f ? fn => zonedTick(f, fn) : fn => tickFns.push(fn);
+  reg(() => {
     const t = performance.now() / 1000 + seed;
     s.clear();
     for (let k = 0; k < 3; k++) {
