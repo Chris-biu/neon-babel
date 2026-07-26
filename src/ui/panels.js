@@ -85,25 +85,32 @@ function openShop(startIdx = 0) {
   const line = el.querySelector('#vendor-line');
   const grid = el.querySelector('#goods-grid');
 
+  // 每日限量：按日期种子2件缺货；周五夜市全场9折
+  const daySeed = Number(dayKey().replaceAll('-', ''));
+  const soldOut = new Set(GIFTS.filter((_, i) => (daySeed + i) % Math.ceil(GIFTS.length / 2) === 0).slice(0, 2).map(g => g.id));
+  const friday = new Date().getDay() === 5;
+  const priceOf = g => friday ? Math.ceil(g.price * 0.9) : g.price;
+
   const show = idx => {
     const v = VENDORS[idx];
     [...tabs.children].forEach((t, i) => t.classList.toggle('active', i === idx));
-    line.textContent = `${v.emoji} ${pick(v.lines || [v.persona])}`;
+    line.textContent = `${v.emoji} ${friday ? '周五夜市，全场九折！——' : ''}${pick(v.lines || [v.persona])}`;
     grid.innerHTML = '';
     for (const gid of v.goods) {
       const g = giftById(gid);
       if (!g) continue;
+      const out = soldOut.has(g.id);
       const card = document.createElement('div');
       card.className = 'good-card';
       card.innerHTML = `
-        <div class="good-emoji">${g.emoji}</div>
+        <div class="good-emoji" style="${out ? 'filter:grayscale(1);opacity:.5' : ''}">${g.emoji}</div>
         <div class="good-name">${escapeHtml(g.name)}</div>
         <div class="good-desc">${escapeHtml(g.desc)}</div>
-        <div class="good-price">🪙 ${g.price}</div>
-        <button class="good-buy">买下</button>
+        <div class="good-price">${out ? '<span style="color:var(--text-dim)">今日售罄</span>' : friday ? `<s style="opacity:.5">🪙 ${g.price}</s> 🪙 ${priceOf(g)}` : `🪙 ${g.price}`}</div>
+        <button class="good-buy" ${out ? 'disabled' : ''}>${out ? '明日再来' : '买下'}</button>
       `;
       card.querySelector('.good-buy').addEventListener('click', () => {
-        if (!spendCoins(g.price)) { sfx.bad(); toast('塔币不够了——去 B1 街机厅赢一点？', 'pink'); return; }
+        if (!spendCoins(priceOf(g))) { sfx.bad(); toast('塔币不够了——去 B1 街机厅赢一点？', 'pink'); return; }
         addItem(g.id);
         sfx.coin();
         el.querySelector('#shop-coins').textContent = state().coins;

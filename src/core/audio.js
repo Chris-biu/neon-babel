@@ -78,6 +78,8 @@ export function tone(freq, dur = .18, type = 'sine', vol = .16, delay = 0) {
 }
 
 export const sfx = {
+  step()   { tone(110 + Math.random() * 30, .05, 'triangle', .05); },
+  ding()   { tone(988, .12, 'sine', .09); tone(1319, .3, 'sine', .07, .1); },
   tap()    { tone(660, .08, 'sine', .1); },
   open()   { tone(440, .12, 'sine', .12); tone(660, .14, 'sine', .1, .06); },
   close()  { tone(520, .1, 'sine', .09); tone(360, .12, 'sine', .08, .05); },

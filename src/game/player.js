@@ -27,6 +27,7 @@ export function spawnPlayer(worldLayer, api, startKey = 'lobby') {
     api, c, walk, stand,
     x: ELEV.x2 + 90, fi,
     dir: 1, moving: false,
+    vx: 0, stepT: 0,
     elevCd: 0, interCd: 0,
     prompt: makePrompt(),
     nearest: null,
@@ -97,7 +98,7 @@ function onKeyDown(e) {
       if (ni >= 0 && ni < P.api.floors.length) {
         P.fi = ni;
         P.elevCd = 380;
-        sfx.open();
+        sfx.ding();
         place();
       } else {
         sfx.bad();
@@ -126,18 +127,28 @@ export function tickPlayer(dms) {
   P.elevCd -= dms; P.interCd -= dms;
   const modalOpen = document.querySelector('.modal-mask') || !document.getElementById('gate')?.classList.contains('hidden');
 
-  let vx = 0;
+  let input = 0;
   if (!modalOpen) {
-    if (keys['a'] || keys['arrowleft']) vx -= 1;
-    if (keys['d'] || keys['arrowright']) vx += 1;
+    if (keys['a'] || keys['arrowleft']) input -= 1;
+    if (keys['d'] || keys['arrowright']) input += 1;
   }
+  // 加减速：起步有推背感，松手滑半步（星露谷式手感）
+  const targetV = input * 0.34;
+  const k = input !== 0 ? 0.012 : 0.02;
+  P.vx += (targetV - P.vx) * Math.min(1, dms * k * 10);
+  if (Math.abs(P.vx) < 0.01 && input === 0) P.vx = 0;
   const wasMoving = P.moving;
-  P.moving = vx !== 0;
-  if (P.moving) {
-    P.x += vx * dms * 0.32;
+  P.moving = Math.abs(P.vx) > 0.03;
+  if (P.vx !== 0) {
+    P.x += P.vx * dms;
     P.x = Math.max(44, Math.min(IW - 56, P.x));
-    if (vx !== 0) P.dir = vx;
+    if (input !== 0) P.dir = input;
   }
+  // 脚步声
+  if (P.moving && input !== 0) {
+    P.stepT -= dms;
+    if (P.stepT <= 0) { P.stepT = 250; sfx.step(); }
+  } else P.stepT = 0;
   if (P.moving !== wasMoving) {
     P.walk.visible = P.moving;
     P.stand.visible = !P.moving;

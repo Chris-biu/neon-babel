@@ -1,8 +1,10 @@
 // 标题页 → 守门人入住仪式 → 角色创建；以及入住后的大堂闲聊
 import { GATEKEEPER } from '../data/world.js';
 import { TAGLINES, LOADING_LINES } from '../data/events.js';
+import { todayRiddle } from '../data/riddles.js';
 import { bus } from '../core/bus.js';
-import { state, isNewPlayer, createPlayer } from '../core/state.js';
+import { state, save, isNewPlayer, createPlayer, addCoins } from '../core/state.js';
+import { dayKey } from '../core/clock.js';
 import { sfx, startRain } from '../core/audio.js';
 import { toast, escapeHtml } from './hud.js';
 import { openModal } from './panels.js';
@@ -184,19 +186,58 @@ function openGateSmalltalk() {
       </div>
       <div class="chat-body" id="gate-chat-body"></div>
       <div class="chat-options">
+        <button class="chat-opt" id="gate-riddle">🧩 今日谜语（答对赏 30 塔币）</button>
         <button class="chat-opt" id="gate-more">🕯 再聊两句</button>
         <button class="chat-opt" data-close>🚪 告辞</button>
       </div>
     </div>
   `);
   const body = el.querySelector('#gate-chat-body');
-  const say = () => {
+  const say = (text) => {
     const div = document.createElement('div');
     div.className = 'chat-msg';
-    div.innerHTML = `<span class="m-ava">${GATEKEEPER.emoji}</span><div class="m-text">${escapeHtml(pick(GATEKEEPER.smalltalk))}</div>`;
+    div.innerHTML = `<span class="m-ava">${GATEKEEPER.emoji}</span><div class="m-text">${escapeHtml(text || pick(GATEKEEPER.smalltalk))}</div>`;
     body.appendChild(div);
     body.scrollTop = body.scrollHeight;
   };
   say();
   el.querySelector('#gate-more').addEventListener('click', () => { sfx.tap(); say(); });
+
+  // 每日谜语
+  el.querySelector('#gate-riddle').addEventListener('click', () => {
+    sfx.tap();
+    const S = state();
+    const today = dayKey();
+    const r = todayRiddle(today);
+    if (S.riddle?.day === today && S.riddle.solved) {
+      say('今天的谜你已经解了。明天的更难——我今晚现编。');
+      return;
+    }
+    say(`听好，今日谜语：${r.q}`);
+    const opts = el.querySelector('.chat-options');
+    if (opts.querySelector('#riddle-row')) return;
+    const row = document.createElement('div');
+    row.id = 'riddle-row';
+    row.className = 'chat-free-row';
+    row.innerHTML = `<input type="text" maxlength="20" placeholder="你的答案…"><button class="btn-glow btn-sm">答</button>`;
+    opts.prepend(row);
+    const input = row.querySelector('input');
+    row.querySelector('button').addEventListener('click', () => {
+      const v = input.value.trim();
+      if (!v) return;
+      if (r.a.some(ans => v.includes(ans))) {
+        S.riddle = { day: today, solved: true };
+        save();
+        sfx.win();
+        say(r.praise);
+        addCoins(30, '· 谜语赏金');
+        row.remove();
+      } else {
+        sfx.bad();
+        say(pick(['不对。再想想——提示是：它就在这栋塔里。', '差得有点远。本门房拒绝给第二条提示。', '错。但你认真的样子勉强值得表扬。']));
+        input.value = '';
+      }
+    });
+    input.focus();
+  });
 }
