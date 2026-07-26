@@ -146,7 +146,7 @@ export function getNewspaper(forDay = null) {
   const db = loadEvents();
   const list = (db[k] || []).slice();
   // 权重：口角/离谱/恋爱类更容易上头条
-  const rank = { '离谱': 5, '口角': 4, '恋爱': 4, '集体': 3, '温情': 3, '日常': 1 };
+  const rank = { '特稿': 9, '离谱': 5, '口角': 4, '恋爱': 4, '集体': 3, '温情': 3, '日常': 1 };
   list.sort((a, b) => (rank[b.cat] || 1) - (rank[a.cat] || 1));
   const picked = list.slice(0, 6);
   const paper = {
@@ -197,6 +197,15 @@ export function checkMedals() {
       if (unlockMedal(d.id)) bus.emit('medal:new', d);
     }
   }
+}
+
+/** 剧情特稿：写进动态流与当日楼报（高权重上头条） */
+export function reportSpecial(headline, text) {
+  const d = new Date();
+  pushEvent({
+    t: d.getHours() * 60 + d.getMinutes(),
+    cat: '特稿', text, headline, who: [], rids: [],
+  });
 }
 
 // ── 每日委托（大堂委托板） ──

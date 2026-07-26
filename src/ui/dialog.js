@@ -8,7 +8,8 @@ import {
 import { sfx } from '../core/audio.js';
 import { toast, escapeHtml } from './hud.js';
 import { openModal, giftById } from './panels.js';
-import { residentStatus, checkMedals, getRelNote, questProgress } from '../sim/engine.js';
+import { residentStatus, checkMedals, getRelNote, questProgress, reportSpecial } from '../sim/engine.js';
+import { getArc } from '../data/arcs.js';
 import { aiEnabled, chatLLM, residentSystemPrompt } from '../ai/llm.js';
 
 const pick = arr => arr[Math.floor(Math.random() * arr.length)];
@@ -99,9 +100,13 @@ async function open(rid) {
     }, 26);
   });
 
-  // ── 问候 ──
+  // ── 问候（心结已解的住户有专属新问候） ──
+  const arc = getArc(rid);
+  const arcIdx = () => (state().arcs || {})[rid] || 0;
+  const arcDone = arc && arcIdx() >= arc.stages.length;
   let greeting;
   if (visit.first) greeting = pick(res.greetings.first);
+  else if (arcDone && Math.random() < 0.5) greeting = arc.done.greeting;
   else if (aff >= 8) greeting = pick(res.greetings.close);
   else greeting = pick(res.greetings.familiar);
   await speak(fillPlayer(greeting, res));
@@ -146,6 +151,39 @@ async function open(rid) {
     }
 
     const a = getAffinity(rid);
+
+    // 心结剧情线（好感≥5，置顶显示）
+    if (arc && a >= arc.minAff && arcIdx() < arc.stages.length) {
+      const stage = arc.stages[arcIdx()];
+      addOpt(`<span class="opt-tag">心结</span>${escapeHtml(stage.player_line)}`, async () => {
+        push('player', stage.player_line.replace('💠 ', ''));
+        opts.innerHTML = '';
+        if (stage.needItem && !(state().inventory[stage.needItem] > 0)) {
+          await speak(stage.missingReply);
+          renderOptions();
+          return;
+        }
+        if (stage.needItem) {
+          removeItem(stage.needItem);
+          push('sys', '（交出了信物）', true);
+        }
+        await speak(stage.reply);
+        state().arcs = state().arcs || {};
+        state().arcs[rid] = arcIdx() + 1;
+        save();
+        if (arcIdx() >= arc.stages.length) {
+          // 终幕：世界永久变化
+          addAffinity(rid, 3);
+          refreshAff();
+          reportSpecial(arc.done.headline, arc.done.text);
+          sfx.win();
+          toast(arc.done.toast, 'gold');
+          push('sys', `「${arc.title}」——完。塔记住了今晚。`, true);
+        }
+        renderOptions();
+      });
+    }
+
     const topics = (res.topics || []).filter(t => (t.min_affinity || 0) <= a);
     const locked = (res.topics || []).filter(t => (t.min_affinity || 0) > a);
     for (const t of topics.slice(0, 5)) {
