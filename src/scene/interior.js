@@ -35,8 +35,8 @@ function label(str, opts = {}) {
   const t = new Text({
     text: str,
     style: {
-      fontFamily: opts.serif ? '"Noto Serif SC","Source Han Serif SC","SimSun",serif'
-        : (opts.mono ? '"Courier New",monospace' : '"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif'),
+      fontFamily: '"Fusion Pixel 12px Proportional SC",' + (opts.serif ? '"Noto Serif SC","SimSun",serif'
+        : (opts.mono ? '"Courier New",monospace' : '"PingFang SC","Microsoft YaHei",sans-serif')),
       fontSize: opts.size || 13,
       fill: opts.fill ?? 0x8b93b8,
       fontWeight: opts.bold ? '700' : '400',
@@ -307,6 +307,29 @@ export function buildInterior(worldLayer, { residents, vendors, gatekeeper }) {
     c.addChild(dexSign);
     interactables.push({ floorKey: 'aquarium', x: 115, r: 56, label: '翻翻鱼类图鉴', act: () => bus.emit('dex:open') });
   }
+
+  // ── 声源采集点（白噪音收藏） ──
+  import('../data/sounds.js').then(({ SOUNDS }) => {
+    for (const s of SOUNDS) {
+      const f = floors.find(x => x.key === s.floorKey);
+      if (!f) continue;
+      const fc = new Container();
+      root.addChild(fc);
+      const note = label('♪', { size: 14, fill: 0x9fe8ff, glow: true, glowBlur: 6 });
+      note.x = s.x - 5; note.y = f.ground - 96;
+      fc.addChild(note);
+      zonedTick(f, () => {
+        const t = performance.now() / 1000;
+        note.y = f.ground - 96 + Math.sin(t * 1.6 + s.x) * 4;
+        note.alpha = 0.5 + 0.5 * Math.sin(t * 2 + s.x);
+      });
+      interactables.push({
+        floorKey: s.floorKey, x: s.x, r: 48,
+        labelFn: () => (JSON.parse(localStorage.getItem('neon-babel-save-v1') || '{}').sounds || {})[s.id] ? `再听听「${s.name}」` : `采集「${s.name}」`,
+        act: () => bus.emit('sound:collect', s.id),
+      });
+    }
+  });
 
   const totalH = y + 80;
 

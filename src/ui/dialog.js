@@ -213,6 +213,25 @@ async function open(rid) {
         import('./photo.js').then(({ takePhoto }) => takePhoto(res));
       }));
     }
+    const soundCount = Object.keys(state().sounds || {}).length;
+    if (soundCount >= 5 && !(state().mixGiven || {})[rid]) {
+      row.appendChild(makeBtn('🎧 送白噪音合辑', async () => {
+        state().mixGiven = state().mixGiven || {};
+        state().mixGiven[rid] = true;
+        save();
+        push('player', '（递上一盘亲手采集调制的白噪音合辑）');
+        opts.innerHTML = '';
+        const isShiyi = rid === 'shiyi_sound';
+        await speak(isShiyi
+          ? '（TA把合辑贴在耳边听了很久，眼睛慢慢亮起来）……汤锅、电梯、猫、雨。你把整栋塔的睡意都收进来了。这盘我要收进图书馆的镇馆区——编号：001号馆外来赠品。'
+          : '（TA戴上耳机听了一小段，肩膀肉眼可见地松了下来）……原来塔的声音这么好听。今晚，也许真的能睡着了。谢谢你。');
+        addAffinity(rid, isShiyi ? 3 : 2);
+        refreshAff();
+        push('sys', `熟悉度 +${isShiyi ? 3 : 2}`, true);
+        checkMedals();
+        renderOptions();
+      }));
+    }
     row.appendChild(makeBtn('🎁 送礼物', () => renderGiftPicker()));
     if (aiEnabled()) row.appendChild(makeBtn('💬 自由聊天', () => renderFreeChat()));
     row.appendChild(makeBtn('🚪 告辞', () => { sfx.close(); el.querySelector('[data-close]').click(); }));

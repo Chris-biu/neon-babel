@@ -41,9 +41,32 @@ export function initPanels() {
   bus.on('aquarium:open', () => bus.emit('fishing:open'));
   bus.on('quests:open', openQuests);
   bus.on('dex:open', openFishDex);
+  bus.on('sound:collect', onSoundCollect);
   bus.on('quest:done', q => {
     addCoins(q.reward, '· 委托完成');
     toast(`📌 委托完成：${q.text.slice(0, 18)}…`, 'gold');
+  });
+}
+
+// ── 白噪音采集 ──
+function onSoundCollect(id) {
+  return import('../data/sounds.js').then(({ SOUNDS }) => {
+    return import('../core/audio.js').then(({ tone }) => {
+      const s = SOUNDS.find(x => x.id === id);
+      if (!s) return;
+      // 播放该声源的"音色"（分层音）
+      tone(s.freq, 0.8, 'sine', 0.1);
+      tone(s.freq * 1.5, 0.6, 'sine', 0.05, 0.15);
+      const S = state();
+      S.sounds = S.sounds || {};
+      if (S.sounds[id]) { toast(`${s.emoji} ${escapeHtml(s.desc)}`); return; }
+      S.sounds[id] = true;
+      save();
+      const n = Object.keys(S.sounds).length;
+      sfx.chime();
+      toast(`🎧 采集到「${s.name}」（${n}/${SOUNDS.length}）——${n >= 5 ? '可以去送人白噪音合辑了！' : '收进你的白噪音收藏册'}`, 'gold');
+      checkMedals();
+    });
   });
 }
 
@@ -261,8 +284,20 @@ function openBag() {
         return g ? `<div class="bag-item"><div class="b-emoji">${g.emoji}</div><div class="b-name">${escapeHtml(g.name)}</div><div class="b-count">× ${n}</div></div>` : '';
       }).join('')}</div>`
       : `<div class="empty-note">背包空空如也。<br>9F 夜市的摊主们等你很久了。</div>`}
+      <div id="bag-sounds" style="margin-top:16px"></div>
     </div>
-  `);
+  `).el && import('../data/sounds.js').then(({ SOUNDS }) => {
+    const box = document.getElementById('bag-sounds');
+    if (!box) return;
+    const got = state().sounds || {};
+    box.innerHTML = `
+      <h4 style="font-size:13px;letter-spacing:.15em;color:var(--neon-cyan);margin-bottom:8px">🎧 白噪音收藏册（${Object.keys(got).length}/${SOUNDS.length}）· 塔里到处有 ♪ 音符，走近按 E 采集</h4>
+      <div class="bag-grid">${SOUNDS.map(s => `
+        <div class="bag-item" style="${got[s.id] ? '' : 'opacity:.35;filter:grayscale(.8)'}" title="${got[s.id] ? escapeHtml(s.desc) : '还没采集到'}">
+          <div class="b-emoji">${got[s.id] ? s.emoji : '♪'}</div>
+          <div class="b-name">${got[s.id] ? escapeHtml(s.name) : '？？？'}</div>
+        </div>`).join('')}</div>`;
+  });
 }
 
 // ── 成就 ──

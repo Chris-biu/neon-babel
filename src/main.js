@@ -2,6 +2,7 @@
 // 不夜塔 · Neon Babel — 主入口（WASD 可操控探索版）
 // ═══════════════════════════════════════════════════════
 import './style.css';
+import '@fontsource/fusion-pixel-12px-proportional-sc'; // 像素中文字体（全局）
 import { createApp, scene, layout } from './scene/app.js';
 import { buildSky, buildCity, tickSky, redraw as redrawSky } from './scene/sky.js';
 import { buildRain, tickRain } from './scene/rain.js';
@@ -25,6 +26,8 @@ let worldStarted = false;
 
 async function main() {
   console.log('[nb] boot start');
+  // 等像素字体就绪再建世界，避免Pixi文字用回退字体渲染
+  try { await Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 2500))]); } catch {}
   const app = await createApp();
   console.log('[nb] pixi ready');
   window.__nb = { app, scene, bus };

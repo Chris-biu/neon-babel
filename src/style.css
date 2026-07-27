@@ -20,8 +20,8 @@
   --panel-bg: rgba(17, 21, 39, .92);
   --glass: rgba(20, 26, 48, .78);
   --radius: 16px;
-  --serif: "NeonPixel", "Noto Serif SC", "Source Han Serif SC", "Songti SC", "STSong", "SimSun", serif;
-  --sans: "NeonPixel", "PingFang SC", "Microsoft YaHei", "Segoe UI", system-ui, sans-serif;
+  --serif: "Fusion Pixel 12px Proportional SC", "NeonPixel", "Noto Serif SC", "SimSun", serif;
+  --sans: "Fusion Pixel 12px Proportional SC", "NeonPixel", "PingFang SC", "Microsoft YaHei", "Segoe UI", system-ui, sans-serif;
   --shadow: 0 12px 44px rgba(0, 0, 0, .55);
 }
 
