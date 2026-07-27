@@ -2,7 +2,7 @@
 // 塔内世界（侧视角室内）：天台 → 夜市 → 居民层 → 大堂 → 街机厅 → 水族层
 // 玩家用 WASD 在其中行走，E 交互
 // ═══════════════════════════════════════════════════════
-import { Container, Graphics, Text } from 'pixi.js';
+import { Container, Graphics, Text, Texture, Sprite } from 'pixi.js';
 import {
   pixelSprite, pixelAnim, makeCharacter, makeFurniture,
   makeFish, makeJelly, CAT_FRAMES, CAT_PAL, shade, mixHex,
@@ -70,6 +70,7 @@ export function buildInterior(worldLayer, { residents, vendors, gatekeeper }) {
   {
     const f = addFloor('rooftop', '天台', '🌙', 210);
     const c = new Container(); root.addChild(c);
+    mountFloorArt(c, f, 'rooftop', 0);
     const g = new Graphics();
     g.rect(WALL_L - 10, f.ground, IW - 2 * WALL_L + 20, 18).fill(0x1a2138);
     g.rect(WALL_L - 10, f.ground, IW - 2 * WALL_L + 20, 4).fill(0x2a3355);
@@ -367,10 +368,28 @@ export function buildInterior(worldLayer, { residents, vendors, gatekeeper }) {
   return api;
 }
 
+/** 外部楼层背景图挂载点：public/bg/<key>.png 存在即自动铺上（像素风，最近邻缩放）
+ *  居民层共用 corridor.png；其余用楼层key：lobby/market/arcade/aquarium/rooftop */
+function mountFloorArt(c, f, key, atIndex = 1) {
+  const img = new Image();
+  img.onload = () => {
+    try {
+      const tex = Texture.from(img);
+      tex.source.scaleMode = 'nearest';
+      const sp = new Sprite(tex);
+      sp.x = WALL_L - 12; sp.y = f.top;
+      sp.width = IW - 2 * WALL_L + 24; sp.height = f.h;
+      c.addChildAt(sp, Math.min(atIndex, c.children.length));
+    } catch { /* 忽略挂载失败 */ }
+  };
+  img.src = `/bg/${key}.png`;
+}
+
 // ── 楼层外壳：背景墙 + 地板 + 吊灯 ──
 function interiorShell(root, f, wallCol, wallLit, wood = false) {
   const c = new Container();
   root.addChild(c);
+  mountFloorArt(c, f, f.key.startsWith('f') ? 'corridor' : f.key);
   const g = new Graphics();
   g.rect(WALL_L - 12, f.top, IW - 2 * WALL_L + 24, f.h).fill(wallCol);
   // 护墙板
