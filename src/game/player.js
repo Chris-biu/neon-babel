@@ -1,13 +1,15 @@
 // 玩家控制器：WASD 移动 · 电梯上下楼 · E 交互 · 摄像机跟随
 import { Container, Graphics } from 'pixi.js';
 import { makeCharacter } from '../scene/pixels.js';
-import { scene, worldToScreen, setFollow } from '../scene/app.js';
+import { scene, worldToScreen, setFollow, layout } from '../scene/app.js';
 import { IW, ELEV } from '../scene/interior.js';
 import { bus } from '../core/bus.js';
-import { state, addCoins } from '../core/state.js';
+import { state, save, addCoins, addAffinity } from '../core/state.js';
 import { sfx } from '../core/audio.js';
 import { toast } from '../ui/hud.js';
 import { FLOORS_FLAVOR } from '../data/world.js';
+import { getResident } from '../data/residents.js';
+import { dayKey } from '../core/clock.js';
 
 const pick = arr => arr[Math.floor(Math.random() * arr.length)];
 let P = null;
@@ -50,6 +52,37 @@ export function spawnPlayer(worldLayer, api, startKey = 'lobby') {
     sfx.open();
     place(true);
     toast(`🛗 电梯到达 ${api.floors[idx].label}`);
+  });
+
+  // 进屋拜访 / 离开房间
+  let returnPoint = null;
+  bus.on('room:visit', rid => {
+    const res = getResident(rid);
+    if (!res || !api.ensureRoom) return;
+    const f = api.ensureRoom(res);
+    layout(); // 世界变高了，重算摄像机范围
+    returnPoint = { fi: P.fi, x: P.x };
+    P.fi = api.floors.indexOf(f);
+    P.x = 200;
+    place(true);
+    sfx.open();
+    const S = state();
+    S.roomVisits = S.roomVisits || {};
+    const today = dayKey();
+    if (S.roomVisits[rid] !== today) {
+      S.roomVisits[rid] = today;
+      save();
+      addAffinity(rid, 1);
+      toast(`🏠 进屋拜访 ${res.name}——熟悉度 +1`, 'gold');
+    }
+  });
+  bus.on('room:leave', () => {
+    if (!returnPoint) return;
+    P.fi = returnPoint.fi;
+    P.x = returnPoint.x;
+    returnPoint = null;
+    place(true);
+    sfx.close();
   });
 
   bus.on('exit:door', () => {
@@ -95,6 +128,7 @@ function onKeyDown(e) {
     P.nearest.act();
   }
   if ((k === 'w' || k === 'arrowup' || k === 's' || k === 'arrowdown')) {
+    if (floor().key.startsWith('room:')) return; // 私人房间里没有电梯
     if (inElevator() && P.elevCd <= 0) {
       const up = (k === 'w' || k === 'arrowup');
       const ni = P.fi + (up ? -1 : 1);

@@ -334,8 +334,74 @@ export function buildInterior(worldLayer, { residents, vendors, gatekeeper }) {
 
   const totalH = y + 80;
 
+  // ── 住户私人房间（懒加载的隐藏楼层，进屋拜访用） ──
+  let roomCursorY = totalH + 300;
+  const builtRooms = new Map(); // rid -> floor
+  function ensureRoom(res) {
+    if (builtRooms.has(res.id)) return builtRooms.get(res.id);
+    const f = { key: 'room:' + res.id, label: res.name + '的房间', top: roomCursorY, h: 230, ground: roomCursorY + 230 - 18, wy: roomCursorY + 115 };
+    roomCursorY += 320;
+    floors.push(f);
+    scene.totalH = roomCursorY + 100;
+    const c = new Container();
+    root.addChild(c);
+    // 保底程序化房间（外部图 rooms/<rid>.png 到位后自动覆盖）
+    const g = new Graphics();
+    const wallCol = mixHex('#2b2119', res.color || '#c9a05f', 0.18);
+    g.rect(WALL_L - 12, f.top, IW - 2 * WALL_L + 24, f.h).fill(wallCol);
+    g.rect(WALL_L - 12, f.top, IW - 2 * WALL_L + 24, 8).fill(0x121020);
+    g.rect(WALL_L - 12, f.ground, IW - 2 * WALL_L + 24, 18).fill(0x3a2c1e);
+    g.rect(WALL_L - 12, f.ground, IW - 2 * WALL_L + 24, 3).fill(0x4d3a27);
+    g.rect(WALL_L - 12, f.ground - 40, IW - 2 * WALL_L + 24, 18).fill({ color: 0x000000, alpha: 0.12 });
+    c.addChild(g);
+    mountFloorArt(c, f, 'rooms/' + res.id, 1);
+    // 家具（人设种子布置，加大间距）
+    const r = rng('privroom' + res.id);
+    const kinds = ['bed', 'desk_pc', 'shelf', 'plant', 'lamp_floor', 'radio', 'books_pile', 'tv'];
+    let fx = 260;
+    for (const kind of kinds) {
+      if (r() < 0.35) continue;
+      const fur = makeFurniture(kind, 4);
+      if (!fur) continue;
+      fur.x = fx; fur.y = (kind === 'shelf' || kind === 'radio') ? f.top + 60 : f.ground - fur.height;
+      c.addChild(fur);
+      fx += 150 + r() * 80;
+      if (fx > IW - 300) break;
+    }
+    // 住户在屋里
+    const host = makeCharacter(res.id, 'stand', 4, res.color);
+    host.x = IW - 420; host.y = f.ground - host.height;
+    c.addChild(host);
+    const nm = label(`${res.emoji} ${res.name} 的房间`, { size: 14, fill: 0xffd97a, glow: true, glowBlur: 6 });
+    nm.x = IW / 2 - nm.width / 2; nm.y = f.top + 22;
+    c.addChild(nm);
+    // 出门
+    const door = new Graphics();
+    door.rect(70, f.ground - 116, 82, 116).fill(0x4a3826);
+    door.circle(138, f.ground - 58, 4).fill(0xc9a227);
+    c.addChild(door);
+    interactables.push({ floorKey: f.key, x: 110, r: 70, label: '离开，轻轻带上门', act: () => bus.emit('room:leave') });
+    // 屋内长谈（继续用对话树）
+    interactables.push({
+      floorKey: f.key, x: IW - 400, r: 110,
+      label: `和 ${res.name} 长谈`, act: () => bus.emit('resident:chat-inroom', res.id),
+    });
+    // 可调查物件×2：怪癖与秘密的物证
+    interactables.push({
+      floorKey: f.key, x: 300, r: 80, label: '看看屋里的陈设',
+      act: () => bus.emit('room:inspect', { rid: res.id, kind: 'quirk' }),
+    });
+    interactables.push({
+      floorKey: f.key, x: 640, r: 80, label: '这个东西有点特别…',
+      act: () => bus.emit('room:inspect', { rid: res.id, kind: 'secret' }),
+    });
+    builtRooms.set(res.id, f);
+    return f;
+  }
+
   const api = {
     IW, floors, interactables, totalH,
+    ensureRoom,
     nav: floors.map(f => ({ key: f.key, label: f.label, icon: f.icon, wy: f.wy })),
     getWindowPos(rid) {
       const n = npcs.get(rid);

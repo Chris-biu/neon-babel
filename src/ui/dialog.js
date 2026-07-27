@@ -17,7 +17,14 @@ let towerApi = null;
 
 export function initDialog(api) {
   towerApi = api;
-  bus.on('resident:open', open);
+  bus.on('resident:open', rid => open(rid, false));
+  bus.on('resident:chat-inroom', rid => open(rid, true));
+  bus.on('room:inspect', ({ rid, kind }) => {
+    const res = getResident(rid);
+    if (!res) return;
+    if (kind === 'quirk') toast(`🔍 ${res.quirk}`);
+    else toast(getAffinity(rid) >= 5 ? `🔍 ${res.secret}` : '🔍 它好像承载着什么故事……等你们更熟一点再问吧。');
+  });
 }
 
 function heartsHtml(aff) {
@@ -25,20 +32,19 @@ function heartsHtml(aff) {
   return '♥'.repeat(n).padEnd(10, '♡');
 }
 
-async function open(rid) {
+async function open(rid, inRoom = false) {
   const res = getResident(rid);
   if (!res) return;
   const st = residentStatus(res);
-  towerApi?.knock?.(rid);
-  sfx.knock();
+  if (!inRoom) { towerApi?.knock?.(rid); sfx.knock(); }
 
-  // 睡着/外出：吃闭门羹（但深夜世界观里大多数人醒着）
-  if (!st.present) {
+  // 睡着/外出：吃闭门羹（屋内长谈时跳过此判定）
+  if (!inRoom && !st.present) {
     await wait(420);
     toast(`${res.emoji} ${res.name} 不在家——${st.activity}去了`, '');
     return;
   }
-  if (st.sleeping) {
+  if (!inRoom && st.sleeping) {
     await wait(420);
     toast(`${res.emoji} ${res.name} 难得睡着了……还是别敲了`, '');
     return;
@@ -211,6 +217,13 @@ async function open(rid) {
     if (a >= 8) {
       row.appendChild(makeBtn('📸 深夜合影', () => {
         import('./photo.js').then(({ takePhoto }) => takePhoto(res));
+      }));
+    }
+    // 进屋拜访（已在屋内长谈时不再显示）
+    if (!inRoom) {
+      row.appendChild(makeBtn('🚪 进屋坐坐', () => {
+        el.querySelector('[data-close]').click();
+        bus.emit('room:visit', rid);
       }));
     }
     const soundCount = Object.keys(state().sounds || {}).length;
